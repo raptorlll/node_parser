@@ -1,10 +1,17 @@
 const cheerio = require('cheerio');
 const http = require('http');
 const request = require('request');
+/** Cli interface */
+const program = require('commander');
 /**
  * @param Array townsList
  */
 const townsList = require('./towns/list');
+//http://mongodb.github.io/node-mongodb-native/2.2/tutorials/crud/
+const mongoUtil = require('./mongoUtil');
+const assert = require('assert');
+mongoUtil.connectToServer();
+
 /**
  * Таск в jira: https://jira.itransition.com/browse/SELF-3530
  В копии Фёдор - технический эксперт по фронтенду в нашей команде -
@@ -27,7 +34,9 @@ const townsList = require('./towns/list');
  преобразовывать адрес (страна + регион/область + город)
  в координаты (широту и долготу), которые и сохранять.
  По коллекции с новостями построить geospatial
- индекс и добавить составной unique индекс
+ индекс
+ https://docs.mongodb.com/v3.0/applications/geospatial-indexes/
+ и добавить составной unique индекс
  по дате/времени и названию.
 
  2. На node.js сделать http api,
@@ -67,7 +76,15 @@ const townsList = require('./towns/list');
  Предусмотреть борьбу с условиями состязаний (гонками) - чтобы одна и та же новость не
  парсилась двумя и более клиентами и в БД не появлялись дубликаты новостей.
  */
-const pathUrl = 'https://news.tut.by/';
+
+
+program
+    .version('0.0.1')
+    .option('-l, --limit <limit>', 'urls limit', 50)
+    .option('-u, --url <url>', 'url to parse', 'https://news.tut.by/')
+    .parse(process.argv); // end with parse to parse through the input
+
+
 const limitUrl = 4;
 
 function isValidUrl(link) {
@@ -87,11 +104,18 @@ function isValidTutByUrl(link) {
 
 function prepareAddress(data) {
 
-    let addressComponents = Object.assign({
+    let addressComponents = {
         city: null,
         region: null,
-        country: null
-    }, data.geometry.location);
+        country: null,
+        location:  {
+            type: "Point",
+            coordinates: [
+                data.geometry.location.lat,
+                data.geometry.location.lng
+            ]
+        }
+    };
 
     data.address_components.forEach((addressComponent) => {
         switch (addressComponent.types[0]) {
@@ -161,7 +185,7 @@ function callGoogleApi(string = '') {
 }
 
 function parseDataNestedNews(onSuccess) {
-    return (error, response, body)=>{
+    return (error, response, body) => {
         let dataToStore = {};
         const $ = cheerio.load(body);
         /**
@@ -190,14 +214,16 @@ function parseDataNestedNews(onSuccess) {
          */
         callGoogleApi().then((data) => {
             dataToStore.address = data;
-            onSuccess(dataToStore);
+            onSuccess(null, dataToStore);
+        }).catch((error) => {
+            onSuccess(error);
         });
 
         // console.log(dataToStore);
     };
 }
 
-request(pathUrl, (error, response, body) => {
+request(program.url, (error, response, body) => {
     if (error) {
         console.log("Error", error);
         return;
@@ -212,14 +238,41 @@ request(pathUrl, (error, response, body) => {
         return true;
     }).map((index, element) => {
         return element.attribs.href;
-    }).slice(0, limitUrl);
+    }).slice(0, program.limit);
 
     // Array.prototype.slice(linksCollection, 0).forEach((link)=>{
     for (let link of Array.prototype.slice.call(linksCollection, 0)) {
         // console.log(link);
-        request(link, parseDataNestedNews((objPrepared)=>{
-            console.log("done", objPrepared);
+        request(link, parseDataNestedNews((error, objPrepared) => {
+            if (error) {
+                // console.log('Error', error);
+                return;
+            }
 
+            mongoUtil
+                .getDb()
+                .collection('news')
+                .remove({});
+
+            mongoUtil
+                .getDb()
+                .collection('news')
+                .insert(objPrepared, function (err, r) {
+
+                    assert.equal(null, err);
+                    assert.equal(1, r.insertedCount);
+                    // console.log(1);
+
+                    mongoUtil
+                        .getDb()
+                        .collection('news')
+                        .find()
+                        .each((err, doc)=>{
+                            console.log('---', doc);
+                        });
+                });
+
+            console.log("done", objPrepared);
         }))
     }
 
