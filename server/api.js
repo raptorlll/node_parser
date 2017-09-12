@@ -92,7 +92,7 @@ app.get('/api/news', function (req, res) {
 /**
  * Map reduce
  */
-var mapFunction = function() {
+let mapFunction = function () {
     // console.log('Map');
     /**
      * First replace line breaks
@@ -102,21 +102,26 @@ var mapFunction = function() {
      * and after
      * todo: better line clearing
      */
-    if(!this.content){
+    if (!this.content) {
         return;
     }
-    let content = this.content.replace(/[\r\n.,!?]/g, '').replace(/\s\s+/g, ' ');
+    let content = this.content.toLowerCase()
+        .replace(/[\r\n.,!?]|[^A-Za-zА-Яа-яЁё\s]|[0-9]/g, '')
+        .replace(/\s\s+/g, ' ');
     /**
      * Split
      */
     let words = content.split(/[\s,]+/);
-    words.map((word)=>{
+    words.map((word) => {
         emit(word, 1);
     });
 };
-var reduceFunction = function(keyCustId, valuesPrices) {
+let reduceFunction = function (keyCustId, valuesPrices) {
     return Array.sum(valuesPrices);
 };
+/**
+ * Map-reduce
+ */
 app.get('/api/words', function (req, res) {
     mongoUtil
         .getDb()
@@ -129,12 +134,28 @@ app.get('/api/words', function (req, res) {
         .mapReduce(
             mapFunction,
             reduceFunction,
-            { out: "news_words" }
-        );
+            {
+                out: "news_statistic",
+                sort: {value: -1},
+            }
+        ).then((data) => {
+            data.find({}).sort({value: -1}).toArray((error, data) => {
+                if (error)
+                    return res.status(500).json({
+                        errorMessage: 'Error while processing query',
+                        error
+                    });
+                return res.json(data.reduce((carry, collectionElement) => {
+                    return Object.assign(carry, {
+                        [collectionElement._id]: collectionElement.value
+                    });
+                }, {}));
+            });
+        });
     //db.getCollection('news_words').find().sort({value: -1})
-    return res.json({
-        status: 'OK'
-    });
+    // return res.json({
+    //     status: 'OK'
+    // });
 });
 
 /**
@@ -148,15 +169,15 @@ const server = app.listen(PORT, function () {
 /**
  * Execute closing mongodb connection
  */
-server.on('close', ()=>{
-    console.log('   Server stopped');
-    process.exit(0);
-    mongoUtil.close();
-});
+// server.on('close', ()=>{
+//     console.log('   Server stopped');
+//     // process.exit(0);
+//     mongoUtil.close();
+// });
 
 /**
  * on CTRL + C
  */
-process.on('SIGINT', function() {
-    server.close();
-});
+// process.on('SIGINT', function() {
+//     server.close();
+// });
