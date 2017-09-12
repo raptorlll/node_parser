@@ -18,6 +18,7 @@
     "cheerio": "^1.0.0-rc.2",
     "mongodb": "^2.2.31",
     "commander": "^2.11.0",
-    "express": "^4.15.4"
+    "express": "^4.15.4",
+    "json-over-tcp": "^0.3.2"
   }
 }
