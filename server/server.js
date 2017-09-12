@@ -39,17 +39,6 @@ mongoUtil.connectToServer();
  и добавить составной unique индекс
  по дате/времени и названию.
 
- 2. На node.js сделать http api,
- отдающее документы с новостями из mongo db в
- пределах определённых широты/долготы (в радиусе N км от заданной точки).
- Использовать geospatial запросы mongo db.
- Пример обращения к api:
- GET http://127.0.0.1:8080/api/news?lat=A&long=B&radius=R
- [
- {...новость 1...},
- {...новость 2...},
- ...
- ]
  3. На node.js сделать http api, запускающее подсчёт количества употреблений каждого слова во всех
  новостях из коллекции с помощью mongo db mapreduce
  (разные формы слова считать разными словами).
@@ -85,7 +74,6 @@ program
     .parse(process.argv); // end with parse to parse through the input
 
 
-const limitUrl = 4;
 
 function isValidUrl(link) {
     var pattern = new RegExp('^((https?:)?\\/\\/)?' + // protocol
@@ -100,6 +88,23 @@ function isValidUrl(link) {
 function isValidTutByUrl(link) {
 
 
+}
+function prepareLocation(data) {
+    /**
+     * Such strange construction because
+     * we need create index in  array
+     */
+    let locationPoint = {
+        type: "Point",
+        coordinates: [
+            data.geometry.location.lng,
+            data.geometry.location.lat
+        ]
+    };
+    // return locationPoint;
+    return {
+        locationPoint: locationPoint
+    };
 }
 
 function prepareAddress(data) {
@@ -174,9 +179,9 @@ function callGoogleApi(string = '') {
                 bodyResponse.status !== 'OK'
                 || typeof bodyResponse.error_message !== 'undefined'
             ) {
-                reject('Wrong geocoding api response');
+                reject('Wrong geocoding api response. Status '+ bodyResponse.status);
             } else {
-                let dataFormated = bodyResponse.results.map(prepareAddress);
+                let dataFormated = bodyResponse.results.map(prepareLocation);
                 resolve(dataFormated);
             }
         })
@@ -184,7 +189,7 @@ function callGoogleApi(string = '') {
 
 }
 
-function parseDataNestedNews(onSuccess) {
+function parseDataNestedNews(callback) {
     return (error, response, body) => {
         let dataToStore = {};
         const $ = cheerio.load(body);
@@ -213,10 +218,10 @@ function parseDataNestedNews(onSuccess) {
          * here we can find addres parameter if find
          */
         callGoogleApi().then((data) => {
-            dataToStore.address = data;
-            onSuccess(null, dataToStore);
+            dataToStore.location = data;
+            callback(null, dataToStore);
         }).catch((error) => {
-            onSuccess(error);
+            callback(error);
         });
 
         // console.log(dataToStore);
@@ -240,47 +245,43 @@ request(program.url, (error, response, body) => {
         return element.attribs.href;
     }).slice(0, program.limit);
 
-    // Array.prototype.slice(linksCollection, 0).forEach((link)=>{
+    mongoUtil
+        .getDb()
+        .collection('news')
+        .remove({}).then(()=>{
+        console.log('Removed');
+    });
+
     for (let link of Array.prototype.slice.call(linksCollection, 0)) {
         // console.log(link);
         request(link, parseDataNestedNews((error, objPrepared) => {
             if (error) {
-                // console.log('Error', error);
+                console.log('Error', error);
                 return;
             }
-
-            mongoUtil
-                .getDb()
-                .collection('news')
-                .remove({});
-
             mongoUtil
                 .getDb()
                 .collection('news')
                 .insert(objPrepared, function (err, r) {
-
-                    assert.equal(null, err);
-                    assert.equal(1, r.insertedCount);
-                    // console.log(1);
-
-                    mongoUtil
-                        .getDb()
-                        .collection('news')
-                        .find()
-                        .each((err, doc)=>{
-                            console.log('---', doc);
-                        });
+                    if(err){
+                        console.log('Error while saving in mongodb', err);
+                        return;
+                    }
+                    console.log('Successfully saved');
                 });
-
-            console.log("done", objPrepared);
         }))
     }
 
-    // });
-
-    // console.log('Collec', linksCollection);
+    mongoUtil
+        .getDb()
+        .collection('news')
+        .find()
+        .each((err, doc)=>{
+            console.log('---', doc);
+        });
 
 });
 
 console.log("Hello");
+// process.exit(0);
 return 0;

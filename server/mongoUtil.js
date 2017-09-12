@@ -10,15 +10,22 @@ module.exports = {
         if (!_db)
             MongoClient.connect(url, function (err, db) {
                 assert.equal(null, err);
+
+                db.collection('news').dropAllIndexes();
+
                 db.collection('news')
                     .createIndex({title: 1, date: 1}, {background: true}, (err, result)=>{
                         console.log('Index compound created');
                     });
 
                 db.collection('news')
-                    .createIndex({location: "2dsphere"}, {background: true}, (err, result)=>{
-                        console.log('Index geo created');
-                    });
+                    .createIndex(
+                        {'location.locationPoint': "2dsphere"},
+                        {background: true},
+                        (err, result)=>{
+                            console.log('Index geo created');
+                        }
+                    );
 
                 _db = db;
             });
