@@ -2,8 +2,12 @@ let net = require('net');
 const program = require('commander');
 const master = require('./master');
 const slave = require('./slave');
-
 const {getMainPageLinks, getInnerPagesData} = require('../linksParser');
+let JsonSocket = require('json-socket');
+JsonSocket.prototype.socketName = function () {
+    return this._socket.remoteAddress + ':' + this._socket.remotePort;
+};
+
 /**
  * (бонусное) Реализовать скрипт-парсер из
  * (1) в виде сервера и клиентов. Клиенты
@@ -22,24 +26,26 @@ const {getMainPageLinks, getInnerPagesData} = require('../linksParser');
  */
 program
     .version('0.0.1')
-    .option('-m, --master', 'is this master server(with db connection)')
-    .option('-s, --slave', 'is this server slave')
-    .option('-p, --port <port>', 'self port', Math.ceil(Math.random()*1000))
-    .option('-mp, --masterport <masterport>', 'master port', Math.ceil(Math.random()*1000))
+    .option('-m, --master', 'is this master server(with db connection)', false)
+    .option('-s, --slave', 'is this server slave', false)
+    .option('-p, --port <port>', 'port to master init or to connecting to master', 9000)
+    // .option('-i, --masterport <masterport>', 'master port', Math.ceil(Math.random()*1000))
     .option('-l, --limit <limit>', 'urls limit', 50)
     .option('-u, --url <url>', 'url to parse (root url)', 'https://news.tut.by/')
     .parse(process.argv);
 
 function initializeMaster() {
     let server = net.createServer();
+    console.log('Init master');
     server.on('connection', master.handleConnection);
-    console.log('connect');
+
     getMainPageLinks(program.url, program.limit)
         .then((linksCollection) => {
             /**
              * map in order to pass down to next then in sync way
              */
             return linksCollection.map((index, link) => {
+                // console.log(link);
                 master.addTask(link);
                 return link;
             });
@@ -54,36 +60,18 @@ function initializeMaster() {
         });
 }
 function initializeSlave() {
-    let client = new net.Socket();
-    client.connect(program.port, '127.0.0.1', function() {
-        console.log('Connected');
-        client.write('Hello, server! Love, Client.');
-    });
+    let client = new JsonSocket(new net.Socket());
 
-    client.on('data', function(data) {
-        console.log('Received: ' + data);
-        // client.destroy();
-    });
-
-    client.on('close', function() {
-        console.log('Connection closed');
-    });
-
-    client.on('error', (error)=>{
-        console.log('Connection error', error);
-    });
-
+    slave.handleConnection = slave.handleConnection.bind(client);
+    client.connect(program.port, '127.0.0.1', slave.handleConnection);
 }
+
 /**
  * Init master
  */
-console.log(program);
-// console.log(program.master);
-//
-// process.exit(0);
-if(program.master !== undefined && program.master){
+if (program.master) {
     initializeMaster();
-}else if(program.slave !== undefined && program.slave){
+} else if (program.slave) {
     initializeSlave();
 }
 

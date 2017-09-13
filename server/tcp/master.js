@@ -1,62 +1,56 @@
+let {Master, Slave} = require('./comunication');
 let connections = [];
-let tasks = [];
-
-function addTask(task) {
-    console.log('Added task', task);
-    tasks.push(task);
-}
-
-function removeTask(task) {
-    console.log('Remove task', task);
-    delete tasks[tasks.indexOf(task)];
-}
-
-
-function addConnection(key) {
-    console.log('new client connection from %s', key);
-    connections.push(key);
-}
-
-function removeConnection(key) {
-    console.log('connection from %s closed', remoteAddress);
-    delete connections[connections.indexOf(key)];
-}
-
-function addToWorkers() {
-    for (let i = 0; i< connections.length; i++){
-        let connection = connections[i];
-        connection.split(':');
-        /**
-         * ???????
-         */
-    }
-}
+let TaskQueue = require('./taskQueue');
+let taskQueue = new TaskQueue();
+let JsonSocket = require('json-socket');
+JsonSocket.prototype.socketName = function () {
+    return this._socket.remoteAddress + ':' + this._socket.remotePort;
+};
+let comunication = new Master();
 
 function handleConnection(connection) {
-    let remoteAddress = connection.remoteAddress + ':' + connection.remotePort;
-    addConnection(remoteAddress);
-    addToWorkers();
-    connection.on('data', onConnectionData);
-    connection.once('close', onConnectionClose);
+    connection = new JsonSocket(connection);
+    console.log("Name", connection.socketName());
+    taskQueue.on('newTask', (connection, task) => {
+        console.log("1--", connection);
+        console.log("2--", task);
+        comunication
+            .event('newTask', task)
+            .send(connection);
+    });
+
+    taskQueue.addConnection(connection);
+    taskQueue.checkTasks();
+    comunication.message('Hello from server').send(connection);
+
+    connection.on('message', onConnectionData);
+    connection.on('close', onConnectionClose);
     connection.on('error', onConnectionError);
 
     function onConnectionData(d) {
-        console.log('connection data from %s: %j', remoteAddress, d);
-        connection.write("!!"+ d);
+        comunication.detect(d);
     }
 
     function onConnectionClose() {
-        removeConnection(remoteAddress);
+        console.log("Del");
+        taskQueue.removeConnection(connection);
     }
 
     function onConnectionError(err) {
-        console.log('Connection %s error: %s', remoteAddress, err.message);
+        // console.log('Connection %s error: %s', remoteAddress, err.message);
+    }
+
+    function startInfiniteCheck() {
+        while (taskQueue.haveFreeTasks() && taskQueue.haveFreeConnection() && connections.length) {
+            checkFreeTasks();
+        }
     }
 }
-
 
 
 module.exports = {
     handleConnection,
-    addTask
+    addTask: (task) => {
+        taskQueue.addTask(task);
+    }
 };

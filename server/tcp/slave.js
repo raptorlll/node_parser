@@ -1,30 +1,27 @@
 let master = null;
-function handleConnection(masterPort) {
-    return function(connection) {
-        let remoteAddress = connection.remoteAddress + ':' + connection.remotePort;
-        console.log('Slave connected');
+let {Master, Slave} = require('./comunication');
 
 
-        connection.on('data', onConnectionData);
-        connection.once('close', onConnectionClose);
-        connection.on('error', onConnectionError);
+function handleConnection() {
+    let comunication = new Slave();
+    comunication.message('Hello from client').send(this);
 
-        function onConnectionData(d) {
-            console.log('connection data from %s: %j', remoteAddress, d);
-            connection.write("!!"+ d);
-        }
+    comunication.on('newTask', (task)=>{
+        console.log('Received task', task);
 
-        function onConnectionClose() {
+    });
+    this.on('message', function (data) {
+        comunication.detect(data);
+    });
 
-        }
+    this.on('close', function () {
+        console.log('Close');
+    });
 
-        function onConnectionError(err) {
-            console.log('Connection %s error: %s', remoteAddress, err.message);
-        }
-    }
+    this.on('error', (error) => {
+        console.log('Connection error', error);
+    });
 };
-
-
 
 
 module.exports = {
