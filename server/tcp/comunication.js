@@ -1,5 +1,6 @@
 let Observer = require('./observer');
-class Communicator extends Observer{
+
+class Communicator extends Observer {
     constructor() {
         super();
         this.sendData = {};
@@ -11,10 +12,8 @@ class Communicator extends Observer{
         return this;
     }
 
-
-
-    event(event, data = true){
-        if(typeof this.sendData.events === 'undefined'){
+    event(event, data = true) {
+        if (typeof this.sendData.events === 'undefined') {
             this.sendData.events = []
         }
         this.sendData.events.push({event, data: data});
@@ -33,8 +32,8 @@ class Communicator extends Observer{
         if (typeof data.errorMessage !== 'undefined') {
             console.log('Incoming error message:', data.errorMessage);
         }
-        if(typeof data.events !== 'undefined'){
-            data.events.forEach((value, key)=>{
+        if (typeof data.events !== 'undefined') {
+            data.events.forEach((value) => {
                 this.fire(value.event, value.data);
             });
         }
@@ -42,23 +41,19 @@ class Communicator extends Observer{
 }
 
 class Master extends Communicator {
-    disconnect(){
+    disconnect() {
         this.command(1, 'disconnect')
     }
-    detect(data){
-        // console.log('!!!!!---'+buffer.toString()+'---!!!!!!!');
-        // let data = JSON.parse(buffer.toString());
-        // let data = JSON.parse(buffer.toString());
+
+    detect(data) {
         this.detectCommon(data);
     }
 }
 
 class Slave extends Communicator {
-    detect(data){
-        // console.log('!!!!!---'+buffer.toString()+'---!!!!!!!');
-        // let data = JSON.parse(buffer.toString());
+    detect(data) {
         this.detectCommon(data);
-        if(typeof data.disconnect !== 'undefined'){
+        if (typeof data.disconnect !== 'undefined') {
             this.connection.close();
         }
     }

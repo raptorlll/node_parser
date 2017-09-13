@@ -34,7 +34,7 @@ const app = express();
 const PORT = 8080;
 const mongoUtil = require('./mongoUtil');
 mongoUtil.connectToServer();
-const { serverError } = require('./serverHelpers');
+const {serverError} = require('./serverHelpers');
 
 /**
  * get request on api entry point
@@ -139,30 +139,30 @@ app.get('/api/words', function (req, res) {
                 sort: {value: -1},
             }
         ).then((data) => {
-            data.find({}).sort({value: -1}).toArray((error, dataArray) => {
-                if (error)
-                    return serverError(res, error);
+        data.find({}).sort({value: -1}).toArray((error, dataArray) => {
+            if (error)
+                return serverError(res, error);
 
 
-                mongoUtil
-                    .getDb()
-                    .collection("news_statistic")
-                    .drop(function(error, ok) {
-                        if (error)
-                            return res.status(500).json({
-                                errorMessage: 'Error while processing query',
-                                error
-                            });
+            mongoUtil
+                .getDb()
+                .collection("news_statistic")
+                .drop(function (error, ok) {
+                    if (error)
+                        return res.status(500).json({
+                            errorMessage: 'Error while processing query',
+                            error
+                        });
 
-                    });
+                });
 
-                return res.json(dataArray.reduce((carry, collectionElement) => {
-                    return Object.assign(carry, {
-                        [collectionElement._id]: collectionElement.value
-                    });
-                }, {}));
-            });
+            return res.json(dataArray.reduce((carry, collectionElement) => {
+                return Object.assign(carry, {
+                    [collectionElement._id]: collectionElement.value
+                });
+            }, {}));
         });
+    });
 });
 
 /**
@@ -176,7 +176,7 @@ const server = app.listen(PORT, function () {
 /**
  * Execute closing mongodb connection
  */
-server.on('close', ()=>{
+server.on('close', () => {
     console.log('   Server stopped');
     process.exit(0);
     mongoUtil.close();
@@ -185,6 +185,6 @@ server.on('close', ()=>{
 /**
  * on CTRL + C
  */
-process.on('SIGINT', function() {
+process.on('SIGINT', function () {
     server.close();
 });

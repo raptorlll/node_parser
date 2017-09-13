@@ -14,7 +14,7 @@ module.exports = {
                 db.collection('news').dropAllIndexes();
 
                 db.collection('news')
-                    .createIndex({title: 1, date: 1}, {background: true}, (err, result)=>{
+                    .createIndex({title: 1, date: 1}, {background: true}, (err, result) => {
                         console.log('Index compound created');
                     });
 
@@ -22,7 +22,7 @@ module.exports = {
                     .createIndex(
                         {'location.locationPoint': "2dsphere"},
                         {background: true},
-                        (err, result)=>{
+                        (err, result) => {
                             console.log('Index geo created');
                         }
                     );

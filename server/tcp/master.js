@@ -11,7 +11,7 @@ let comunication = new Master();
 function handleConnection(connection) {
     connection = new JsonSocket(connection);
     console.log("Name", connection.socketName());
-    taskQueue.on('newTask', (connection, task) => {
+    taskQueue.on('newTask', function(connection, task){
         console.log("1--", connection);
         console.log("2--", task);
         comunication

@@ -4,18 +4,14 @@ class Observer {
 
         };
     }
-
     on(eventName, fn) {
         fn.bind(this);
         this.handlers[eventName] = fn;
     }
-
     unsubscribe(eventName) {
         delete this.handlers[eventName];
     }
-
     fire(eventName, ...data) {
-        this.handlers[eventName](data);
         if(typeof this.handlers[eventName] === 'undefined')
             return false;
 

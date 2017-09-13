@@ -61,7 +61,6 @@ function initializeMaster() {
 }
 function initializeSlave() {
     let client = new JsonSocket(new net.Socket());
-
     slave.handleConnection = slave.handleConnection.bind(client);
     client.connect(program.port, '127.0.0.1', slave.handleConnection);
 }
