@@ -49,10 +49,11 @@ function parseDataNestedNews(parentUrl) {
 }
 
 function getInnerPagesData(parentUrl, url) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     request(url, parseDataNestedNews(parentUrl)((error, objPrepared) => {
       if (error) {
-        reject(new Error(error));
+        console.log(`Error ${error}`);
+        resolve(objPrepared);
       }
 
       resolve(objPrepared);

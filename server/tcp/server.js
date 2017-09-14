@@ -1,4 +1,9 @@
 /* eslint-disable no-underscore-dangle */
+/**
+ * node server/tcp/server.js -m -p 9000
+ * node server/tcp/server.js -s -p 9000
+ */
+require('../config');
 const net = require('net');
 const program = require('commander');
 const master = require('./master');
@@ -6,7 +11,9 @@ const slave = require('./slave');
 const { getMainPageLinks } = require('../linksParser');
 const JsonSocket = require('json-socket');
 
-JsonSocket.prototype.socketName = () => `${this._socket.remoteAddress}:${this._socket.remotePort}`;
+JsonSocket.prototype.socketName = function socketName() {
+  return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
+};
 
 program
   .version('0.0.1')
@@ -20,13 +27,13 @@ program
 function initializeMaster() {
   const server = net.createServer();
   console.log('Init master');
-  server.on('connection', master.handleConnection);
+  server.on('connection', master.handleConnection(program.url, program.limit));
 
   getMainPageLinks(program.url, program.limit)
     .then(linksCollection =>
       /**
-           * map in order to pass down to next then in sync way
-           */
+       * map in order to pass down to next then in sync way
+       */
       linksCollection.map((index, link) => {
         // console.log(link);
         master.addTask(link);

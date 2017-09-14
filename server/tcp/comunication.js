@@ -12,12 +12,15 @@ class Communicator extends Observer {
     return this;
   }
 
-  event(event, data = true) {
+  event(event, ...data) {
     if (typeof this.sendData.events === 'undefined') {
       this.sendData.events = [];
     }
 
-    this.sendData.events.push({ event, data });
+    this.sendData.events.push({
+      event,
+      data,
+    });
     return this;
   }
 
@@ -37,7 +40,7 @@ class Communicator extends Observer {
 
     if (typeof data.events !== 'undefined') {
       data.events.forEach((value) => {
-        this.fire(value.event, value.data);
+        this.fire(value.event, ...value.data);
       });
     }
   }

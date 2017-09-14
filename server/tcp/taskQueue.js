@@ -57,6 +57,23 @@ class TaskQueue extends Observer {
     return false;
   }
 
+  getConnectionsDebug() {
+    return this.connections.map(value =>
+      Object.assign({}, value, { connection: value.connection.socketName() }));
+  }
+
+  getTasksDebug() {
+    return Object.keys(this.tasks).map(key => Object.assign(
+      {},
+      this.tasks[key],
+      {
+        performer: this.tasks[key].performer !== null
+          ? this.tasks[key].performer.socketName()
+          : null,
+      }
+    ));
+  }
+
   addConnection(connection) {
     this.connections.push({
       connection,
@@ -78,7 +95,7 @@ class TaskQueue extends Observer {
   }
 
   addTask(task) {
-    const taskKey = this.getTaskKey(task);
+    const taskKey = TaskQueue.getTaskKey(task);
     this.tasks[taskKey] = {
       status: TaskQueue.STATUS_WAIT,
       performer: null,
@@ -91,20 +108,22 @@ class TaskQueue extends Observer {
    * @param task
    */
   static getTaskKey(task) {
-    return typeof task.task !== 'undefined' ? task.task : task;
+    return (typeof task.task !== 'undefined') ? task.task : task;
   }
 
   removeTask(task) {
-    const taskKey = this.getTaskKey(task);
+    const taskKey = TaskQueue.getTaskKey(task);
     delete this.tasks[taskKey];
   }
 
   markTaskDone(task) {
-    const taskKey = this.getTaskKey(task);
-    this.tasks[taskKey].status = TaskQueue.STATUS_WAIT;
+    const taskKey = TaskQueue.getTaskKey(task);
+    this.tasks[taskKey].status = TaskQueue.STATUS_DONE;
+    this.setConnectionAsFree(this.tasks[taskKey].performer, true);
   }
 
-  markStatusWait(taskKey) {
+  markStatusWait(task) {
+    const taskKey = TaskQueue.getTaskKey(task);
     this.tasks[taskKey].performer = null;
     this.tasks[taskKey].status = TaskQueue.STATUS_WAIT;
   }
@@ -118,7 +137,7 @@ class TaskQueue extends Observer {
         rej(new Error('Already in work'));
       }
 
-      const taskKey = this.getTaskKey(task);
+      const taskKey = TaskQueue.getTaskKey(task);
 
       /**
        * don`t have sense
@@ -126,7 +145,7 @@ class TaskQueue extends Observer {
       this.setConnectionAsFree(connection, false);
       Object.assign(this.tasks[taskKey], {
         status: TaskQueue.STATUS_IN_WORK,
-        performer: connection.socketName(),
+        performer: connection,
       });
       res(this.tasks);
     });
