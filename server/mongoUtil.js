@@ -1,39 +1,46 @@
-let MongoClient = require('mongodb').MongoClient
-    , assert = require('assert');
+const { MongoClient } = require('mongodb');
+const assert = require('assert');
 
 // Connection URL
-let url = 'mongodb://localhost:27017/itran_project';
-let _db = null;
+const url = 'mongodb://localhost:27017/itran_project';
+let db = null;
 
 module.exports = {
-    connectToServer: function () {
-        if (!_db)
-            MongoClient.connect(url, function (err, db) {
-                assert.equal(null, err);
+  connectToServer() {
+    if (!db) {
+      MongoClient.connect(url, (err, dbActive) => {
+        assert.equal(null, err);
 
-                db.collection('news').dropAllIndexes();
+        dbActive.collection('news').dropAllIndexes();
 
-                db.collection('news')
-                    .createIndex({title: 1, date: 1}, {background: true}, (err, result) => {
-                        console.log('Index compound created');
-                    });
+        dbActive.collection('news')
+          .createIndex(
+            { title: 1, date: 1 },
+            { background: true },
+            () => {
+              console.log('Index compound created');
+            },
+          );
 
-                db.collection('news')
-                    .createIndex(
-                        {'location.locationPoint': "2dsphere"},
-                        {background: true},
-                        (err, result) => {
-                            console.log('Index geo created');
-                        }
-                    );
+        dbActive.collection('news')
+          .createIndex(
+            { 'location.locationPoint': '2dsphere' },
+            { background: true },
+            () => {
+              console.log('Index geo created');
+            },
+          );
 
-                _db = db;
-            });
-    },
-    getDb: function () {
-        return _db;
-    },
-    close: () => {
-        _db.close();
+        db = dbActive;
+      });
     }
+  },
+
+  getDb() {
+    return db;
+  },
+
+  close: () => {
+    db.close();
+  },
 };

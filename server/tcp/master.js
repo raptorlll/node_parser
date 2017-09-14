@@ -1,56 +1,51 @@
-let {Master, Slave} = require('./comunication');
-let connections = [];
-let TaskQueue = require('./taskQueue');
-let taskQueue = new TaskQueue();
-let JsonSocket = require('json-socket');
-JsonSocket.prototype.socketName = function () {
-    return this._socket.remoteAddress + ':' + this._socket.remotePort;
-};
-let comunication = new Master();
+/* eslint-disable no-underscore-dangle */
+const { Master } = require('./comunication');
+const TaskQueue = require('./taskQueue');
+const JsonSocket = require('json-socket');
 
-function handleConnection(connection) {
-    connection = new JsonSocket(connection);
-    console.log("Name", connection.socketName());
-    taskQueue.on('newTask', function(connection, task){
-        console.log("1--", connection);
-        console.log("2--", task);
-        comunication
-            .event('newTask', task)
-            .send(connection);
-    });
+const taskQueue = new TaskQueue();
 
-    taskQueue.addConnection(connection);
-    taskQueue.checkTasks();
-    comunication.message('Hello from server').send(connection);
+JsonSocket.prototype.socketName = () => `${this._socket.remoteAddress}:${this._socket.remotePort}`;
 
-    connection.on('message', onConnectionData);
-    connection.on('close', onConnectionClose);
-    connection.on('error', onConnectionError);
+const comunication = new Master();
 
-    function onConnectionData(d) {
-        comunication.detect(d);
-    }
+function handleConnection(connectionToDecorate) {
+  const connection = new JsonSocket(connectionToDecorate);
+  console.log('Name', connection.socketName());
 
-    function onConnectionClose() {
-        console.log("Del");
-        taskQueue.removeConnection(connection);
-    }
+  taskQueue.on('newTask', (taskConnection, task) => {
+    // console.log('1--', taskConnection);
+    // console.log('2--', task);
+    comunication
+      .event('newTask', task)
+      .send(taskConnection);
+  });
 
-    function onConnectionError(err) {
-        // console.log('Connection %s error: %s', remoteAddress, err.message);
-    }
+  taskQueue.addConnection(connection);
+  taskQueue.checkTasks();
+  comunication.message('Hello from server').send(connection);
 
-    function startInfiniteCheck() {
-        while (taskQueue.haveFreeTasks() && taskQueue.haveFreeConnection() && connections.length) {
-            checkFreeTasks();
-        }
-    }
+  function onConnectionData(d) {
+    comunication.detect(d);
+  }
+
+  function onConnectionClose() {
+    console.log('Del');
+    taskQueue.removeConnection(connection);
+  }
+
+  function onConnectionError(err) {
+    console.error('Connection %s error: %s', err.message);
+  }
+
+  connection.on('message', onConnectionData);
+  connection.on('close', onConnectionClose);
+  connection.on('error', onConnectionError);
 }
 
-
 module.exports = {
-    handleConnection,
-    addTask: (task) => {
-        taskQueue.addTask(task);
-    }
+  handleConnection,
+  addTask: (task) => {
+    taskQueue.addTask(task);
+  },
 };
