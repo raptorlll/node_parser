@@ -1,9 +1,11 @@
 /** Cli interface */
+require('./config');
 const program = require('commander');
 const { getMainPageLinks, getInnerPagesData } = require('./linksParser');
-
 const mongoUtil = require('./mongoUtil');
 
+// console.log(process.env.MONGO_CONNECTION_STRING);
+// process.exit(0);
 mongoUtil.connectToServer();
 
 program
@@ -19,29 +21,15 @@ program
  */
 getMainPageLinks(program.url, program.limit)
   .then((linksCollection) => {
-    mongoUtil
-      .getDb()
-      .collection('news')
-      .remove({}).then(() => {
-        console.log('Removed');
-      });
+    mongoUtil.dropNews();
 
     /**
-         * Nested walk links
-         */
+     * Nested walk links
+     */
     Array.prototype.slice.call(linksCollection, 0).forEach((link) => {
-      getInnerPagesData(link)
+      getInnerPagesData(program.url, link)
         .then((objPrepared) => {
-          mongoUtil
-            .getDb()
-            .collection('news')
-            .insert(objPrepared, (err) => {
-              if (err) {
-                console.log('Error while saving', err.toString());
-              }
-
-              console.log('Successfully saved');
-            });
+          mongoUtil.addNews(objPrepared);
         })
         .catch((error) => {
           console.log('Error', error.message);

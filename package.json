@@ -27,7 +27,9 @@
     "json-over-tcp": "^0.3.2",
     "json-socket": "^0.3.0",
     "mongodb": "^2.2.31",
-    "require": "^2.4.20"
+    "require": "^2.4.20",
+    "validator":"^8.2.0",
+    "dotenv": "^4.0.0"
   },
   "peerDependencies": {
     "eslint": "^4.6.1",

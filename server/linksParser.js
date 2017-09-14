@@ -2,13 +2,13 @@ const request = require('request');
 /**
  * @param Array townsList
  */
-const townsList = require('./towns/list');
-const cheerio = require('cheerio');
-const { isValidUrl, prepareLocation } = require('./dataPreparation');
+const townsList = require('./towns/list.json');
+const { prepareLocation } = require('./dataPreparation');
+const parserFactory = require('./parserFactory');
 
-function callGoogleApi(string = '') {
+function geolocationApi(string = '') {
   const parameters = {
-    key: 'AIzaSyBI0T2Nh8AZN6J2j1tZ_VamHY1qNFrKVmA',
+    key: process.env.GOOGLE_MAPS_KEY,
     language: 'en',
   };
   /**
@@ -40,61 +40,17 @@ function callGoogleApi(string = '') {
   });
 }
 
-function parseDataNestedNews(callback) {
-  return (error, response, body) => {
-    const dataToStore = {};
-    const $ = cheerio.load(body);
-    /**
-       * Parse datetime
-       */
-    const date = $('[itemprop="datePublished"]').slice(0, 1);
-    if (date.length) {
-      dataToStore.date = new Date(date.attr('datetime'));
-    } else {
-      dataToStore.date = null;
-    }
-    /**
-       * News title
-       */
-    const title = $('h1').slice(0, 1);
-    dataToStore.title = title.length ? title.text() : null;
-    /**
-       * Plain text without html tags
-       */
-    const content = $('#article_body').slice(0, 1);
-    dataToStore.content = content.length ? content.text() : null;
-    /**
-       * Coordinates (maybe few)
-       * here we can find addres parameter if find
-       */
-    callGoogleApi().then((data) => {
-      dataToStore.location = data;
-      callback(null, dataToStore);
-    }).catch((err) => {
-      dataToStore.location = [];
-      callback(err.message, dataToStore);
-    });
-  };
-}
-
 function getMainPageLinks(url, limit) {
-  return new Promise((resolve, reject) => {
-    request(url, (error, response, body) => {
-      if (error) {
-        reject(error);
-      }
-
-      const $ = cheerio.load(body);
-      resolve($('a[href][data-hint-source]')
-        .filter((index, element) => isValidUrl(element.attribs.href))
-        .map((index, element) => element.attribs.href).slice(0, limit));
-    });
-  });
+  return (parserFactory.getMainPageLinks(url))(url, limit);
 }
 
-function getInnerPagesData(url) {
+function parseDataNestedNews(parentUrl) {
+  return parserFactory.parseDataNestedNews(parentUrl)(geolocationApi);
+}
+
+function getInnerPagesData(parentUrl, url) {
   return new Promise((resolve, reject) => {
-    request(url, parseDataNestedNews((error, objPrepared) => {
+    request(url, parseDataNestedNews(parentUrl)((error, objPrepared) => {
       if (error) {
         reject(new Error(error));
       }
