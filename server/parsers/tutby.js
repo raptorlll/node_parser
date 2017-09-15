@@ -17,41 +17,38 @@ function getMainPageLinks(url, limit) {
   });
 }
 
-function getText($, dataToStore) {
+function getDate($) {
   /**
    * Parse datetime
    */
   const date = $('[itemprop="datePublished"]').slice(0, 1);
-  if (date.length) {
-    dataToStore.date = new Date(date.attr('datetime'));
-  } else {
-    dataToStore.date = null;
-  }
+  return date.length ? new Date(date.attr('datetime')) : null;
 }
 
-function getTitle($, dataToStore) {
+function getTitle($) {
   /**
    * News title
    */
   const title = $('h1').slice(0, 1);
-  dataToStore.title = title.length ? title.text() : null;
+  return title.length ? title.text() : null;
 }
 
-function getContent($, dataToStore) {
+function getContent($) {
   /**
    * Plain text without html tags
    */
   const content = $('#article_body').slice(0, 1);
-  dataToStore.content = content.length ? content.text() : null;
+  return content.length ? content.text() : null;
 }
 
 function parseDataNestedNews(callGoogleApi) {
   return callback => (error, response, body) => {
     const dataToStore = {};
     const $ = cheerio.load(body);
-    getText($, dataToStore);
-    getTitle($, dataToStore);
-    getContent($, dataToStore);
+
+    dataToStore.date = getDate($);
+    dataToStore.title = getTitle($);
+    dataToStore.content = getContent($);
     /**
        * Coordinates (maybe few)
        * here we can find addres parameter if find
