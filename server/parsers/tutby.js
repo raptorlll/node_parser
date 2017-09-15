@@ -17,29 +17,41 @@ function getMainPageLinks(url, limit) {
   });
 }
 
+function getText($, dataToStore) {
+  /**
+   * Parse datetime
+   */
+  const date = $('[itemprop="datePublished"]').slice(0, 1);
+  if (date.length) {
+    dataToStore.date = new Date(date.attr('datetime'));
+  } else {
+    dataToStore.date = null;
+  }
+}
+
+function getTitle($, dataToStore) {
+  /**
+   * News title
+   */
+  const title = $('h1').slice(0, 1);
+  dataToStore.title = title.length ? title.text() : null;
+}
+
+function getContent($, dataToStore) {
+  /**
+   * Plain text without html tags
+   */
+  const content = $('#article_body').slice(0, 1);
+  dataToStore.content = content.length ? content.text() : null;
+}
+
 function parseDataNestedNews(callGoogleApi) {
   return callback => (error, response, body) => {
     const dataToStore = {};
     const $ = cheerio.load(body);
-    /**
-       * Parse datetime
-       */
-    const date = $('[itemprop="datePublished"]').slice(0, 1);
-    if (date.length) {
-      dataToStore.date = new Date(date.attr('datetime'));
-    } else {
-      dataToStore.date = null;
-    }
-    /**
-       * News title
-       */
-    const title = $('h1').slice(0, 1);
-    dataToStore.title = title.length ? title.text() : null;
-    /**
-       * Plain text without html tags
-       */
-    const content = $('#article_body').slice(0, 1);
-    dataToStore.content = content.length ? content.text() : null;
+    getText($, dataToStore);
+    getTitle($, dataToStore);
+    getContent($, dataToStore);
     /**
        * Coordinates (maybe few)
        * here we can find addres parameter if find
