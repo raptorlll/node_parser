@@ -30,19 +30,12 @@ function prepareLocation(data) {
  * @param data
  */
 function prepareAddress(data) {
-  const locationPoint = {
-    type: 'Point',
-    coordinates: [
-      data.geometry.location.lng,
-      data.geometry.location.lat,
-    ],
-  };
   const addressComponents = {
     city: null,
     region: null,
     country: null,
     location: {
-      locationPoint,
+      locationPoint: prepareLocation(data)
     },
   };
   data.address_components.forEach((addressComponent) => {

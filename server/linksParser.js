@@ -4,7 +4,7 @@ const request = require('request');
  */
 const townsList = require('./towns/list.json');
 const { prepareLocation } = require('./dataPreparation');
-const parserFactory = require('./parserFactory');
+const parserInitializator = require('./parserInitializator');
 
 function geolocationApi(string = '') {
   const parameters = {
@@ -46,11 +46,11 @@ function geolocationApi(string = '') {
 }
 
 function getMainPageLinks(url, limit) {
-  return (parserFactory.getMainPageLinks(url))(url, limit);
+  return (parserInitializator.getMainPageLinks(url))(url, limit);
 }
 
 function parseDataNestedNews(parentUrl) {
-  return parserFactory.parseDataNestedNews(parentUrl)(geolocationApi);
+  return parserInitializator.parseDataNestedNews(parentUrl)(geolocationApi);
 }
 
 function getInnerPagesData(parentUrl, url) {
@@ -58,7 +58,6 @@ function getInnerPagesData(parentUrl, url) {
     request(url, parseDataNestedNews(parentUrl)((error, objPrepared) => {
       if (error) {
         console.log(`Error: ${error}, ${objPrepared}`);
-        resolve(objPrepared);
       }
 
       resolve(objPrepared);
