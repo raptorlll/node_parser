@@ -18,25 +18,16 @@ function getMainPageLinks(url, limit) {
 }
 
 function getDate($) {
-  /**
-   * Parse datetime
-   */
   const date = $('[itemprop="datePublished"]').slice(0, 1);
   return date.length ? new Date(date.attr('datetime')) : null;
 }
 
 function getTitle($) {
-  /**
-   * News title
-   */
   const title = $('h1').slice(0, 1);
   return title.length ? title.text() : null;
 }
 
 function getContent($) {
-  /**
-   * Plain text without html tags
-   */
   const content = $('#article_body').slice(0, 1);
   return content.length ? content.text() : null;
 }
