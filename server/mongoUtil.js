@@ -63,6 +63,12 @@ function addNews(objPrepared) {
 
 function dropNews() {
   getDb()
+    .collection('news')
+    .remove({});
+}
+
+function dropTmpNews() {
+  getDb()
     .collection('news_words')
     .remove({});
 }
@@ -154,4 +160,5 @@ module.exports = {
   close,
   getWordsCount,
   getNewsInRadius,
+  dropTmpNews,
 };

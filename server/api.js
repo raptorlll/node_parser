@@ -49,7 +49,7 @@ app.get('/api/news', (req, res) => {
  * Map-reduce
  */
 app.get('/api/words', (req, res) => {
-  mongoUtil.dropNews();
+  mongoUtil.dropTmpNews();
   mongoUtil
     .getWordsCount()
     .then((out) => {
