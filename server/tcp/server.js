@@ -9,11 +9,7 @@ const program = require('commander');
 const master = require('./master');
 const slave = require('./slave');
 const { getMainPageLinks } = require('../linksParser');
-const JsonSocket = require('json-socket');
-
-JsonSocket.prototype.socketName = function socketName() {
-  return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
-};
+const JsonSocket = require('./json-socket');
 
 program
   .version('0.0.1')
@@ -22,13 +18,14 @@ program
   .option('-p, --port <port>', 'port to master init or to connecting to master', 9000)
   .option('-l, --limit <limit>', 'urls limit', 50)
   .option('-u, --url <url>', 'url to parse (root url)', 'https://news.tut.by/')
+  .option('-d, --delay <delay>', 'delay in ms', 500)
+  .option('-y, --selveslave', 'selve slave (master can parse to)', false)
   .parse(process.argv);
 
 function initializeMaster() {
   const server = net.createServer();
   console.log('Init master');
-  server.on('connection', master.handleConnection(program.url, program.limit));
-
+  server.on('connection', master.handleConnection(program.url, program.limit, program.delay, program.selveslave));
   getMainPageLinks(program.url, program.limit)
     .then(linksCollection =>
       /**

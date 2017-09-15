@@ -25,7 +25,12 @@ class Communicator extends Observer {
   }
 
   send(connection) {
-    connection.sendMessage(this.sendData);
+    if (typeof connection.isReal === 'undefined' || connection.isReal) {
+      connection.sendMessage(this.sendData);
+    } else {
+      this.detect(this.sendData);
+    }
+
     this.sendData = {};
   }
 

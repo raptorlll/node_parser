@@ -1,6 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 require('./config');
 const express = require('express');
+
 const app = express();
 const PORT = 8080;
 const mongoUtil = require('./mongoUtil');

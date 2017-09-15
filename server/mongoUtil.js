@@ -6,6 +6,8 @@ const tempTable = 'news_statistic';
 let db = null;
 
 function initIndexes(dbActive) {
+
+
   dbActive
     .collection('news')
     .dropAllIndexes();
@@ -14,20 +16,14 @@ function initIndexes(dbActive) {
     .collection('news')
     .createIndex(
       { title: 1, date: 1 },
-      { background: true },
-      () => {
-        console.log('Index compound created');
-      }
+      { background: true }
     );
 
   dbActive
     .collection('news')
     .createIndex(
       { 'location.locationPoint': '2dsphere' },
-      { background: true },
-      () => {
-        console.log('Index geo created');
-      }
+      { background: true }
     );
 }
 
@@ -62,8 +58,6 @@ function addNews(objPrepared) {
       if (err) {
         console.log('Error while saving', err.toString());
       }
-
-      console.log('Successfully saved');
     });
 }
 

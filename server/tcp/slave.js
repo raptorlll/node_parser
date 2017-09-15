@@ -9,21 +9,21 @@ function handleConnection() {
   comunication.message('Hello from client').send(this);
 
   comunication.on(Constants.NEW_TASK, (task, parentUrl) => {
-    // console.log('Received task', task);
-    // console.log('Parent url', parentUrl);
-
     getInnerPagesData(parentUrl, task)
       .then((objPrepared) => {
         comunication
           .event(Constants.TASK_DONE, task, objPrepared)
           .send(this);
         console.log(`Sended : ${task}`);
-
-        // console.log('Send', objPrepared);
       })
       .catch((error) => {
         console.log('Error', error.message);
       });
+  });
+
+  comunication.on(Constants.END_COMMUNICATION_TASK, () => {
+    console.log('Work ended');
+    process.exit(0);
   });
 
   this.on('message', (data) => {

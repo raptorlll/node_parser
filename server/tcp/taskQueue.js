@@ -11,7 +11,7 @@ class TaskQueue extends Observer {
   }
 
   static get STATUS_DONE() {
-    return 'STATUS_IN_WORK';
+    return 'STATUS_DONE';
   }
 
   constructor() {
@@ -30,7 +30,7 @@ class TaskQueue extends Observer {
     /**
      * Detect that we have free connection
      */
-    if (connectionElement === 'undefined') {
+    if (connectionElement === undefined) {
       return false;
     }
 
@@ -54,6 +54,8 @@ class TaskQueue extends Observer {
       .catch((error) => {
         console.log('Error', error.message);
       });
+
+    this.checkTasks();
     return false;
   }
 
@@ -85,13 +87,15 @@ class TaskQueue extends Observer {
     const taskKey = Object
       .keys(this.tasks)
       .find(key => this.tasks[key].status === TaskQueue.STATUS_IN_WORK
-        && this.tasks[key].performer.socketName() === connection.socketName());
+        && Object.is(this.tasks[key].performer, connection));
 
-    this.markStatusWait(taskKey);
+    if (typeof taskKey !== 'undefined') {
+      this.markStatusWait(taskKey);
+    }
 
     delete this.connections[Object
       .keys(this.connections)
-      .find(key => this.connections[key].connection.socketName() === connection.socketName())];
+      .find(key => Object.is(this.connections[key].connection, connection))];
   }
 
   addTask(task) {
@@ -128,6 +132,11 @@ class TaskQueue extends Observer {
     this.tasks[taskKey].status = TaskQueue.STATUS_WAIT;
   }
 
+  getPerformer(task) {
+    const taskKey = TaskQueue.getTaskKey(task);
+    return this.tasks[taskKey].performer;
+  }
+
   markTaskInWork(task, connection) {
     return new Promise((res, rej) => {
       if (this.tasks.status === TaskQueue.STATUS_WAIT) {
@@ -152,12 +161,11 @@ class TaskQueue extends Observer {
   }
 
   setConnectionAsFree(connection, free = true) {
-    // console.log('FRee', connection);
     this.connections[
       Object
         .keys(this.connections)
         .find(key =>
-          this.connections[key].connection.socketName() === connection.socketName())
+          Object.is(this.connections[key].connection, connection))
     ].free = free;
   }
 

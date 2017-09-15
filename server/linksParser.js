@@ -26,7 +26,12 @@ function geolocationApi(string = '') {
     }, (error, response, body) => {
       if (error) { reject(new Error(`Error in nested link ${error}`)); }
 
-      const bodyResponse = JSON.parse(body);
+      let bodyResponse;
+      try {
+        bodyResponse = JSON.parse(body);
+      } catch (e) {
+        reject(new Error(`Wrong geocoding api response. ${e.message}`));
+      }
 
       if (bodyResponse.status !== 'OK'
           || typeof bodyResponse.error_message !== 'undefined'
@@ -52,7 +57,7 @@ function getInnerPagesData(parentUrl, url) {
   return new Promise((resolve) => {
     request(url, parseDataNestedNews(parentUrl)((error, objPrepared) => {
       if (error) {
-        console.log(`Error ${error}`);
+        console.log(`Error: ${error}, ${objPrepared}`);
         resolve(objPrepared);
       }
 

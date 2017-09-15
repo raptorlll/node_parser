@@ -22,7 +22,6 @@ program
 getMainPageLinks(program.url, program.limit)
   .then((linksCollection) => {
     mongoUtil.dropNews();
-
     /**
      * Nested walk links
      */
@@ -30,6 +29,7 @@ getMainPageLinks(program.url, program.limit)
       getInnerPagesData(program.url, link)
         .then((objPrepared) => {
           mongoUtil.addNews(objPrepared);
+          console.log('Added news');
         })
         .catch((error) => {
           console.log('Error', error.message);

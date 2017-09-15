@@ -13,7 +13,7 @@ function mapFunction() {
     .split(/[\s,]+/);
   /**
    * First replace line breaks
-   * and replace multimle
+   * and replace multiple
    * Suggest that there are wrong formatting
    * so first split by whitespace
    * and after

@@ -1,4 +1,3 @@
-var validator = require('validator');
 function isValidUrl(link) {
   const pattern = new RegExp('^((https?:)?\\/\\/)?' + // protocol
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
